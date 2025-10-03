@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Сайт</title>
+  <style>
+    :root {
+      --pulse-scale: 1.07;
+      --pulse-duration: 1.8s;
+    }
+
+    /* Базовые стили */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      overflow-y: auto; /* разрешаем вертикальный скролл */
+    }
+
+    /* Фон: цифровой дождь */
+    #matrix {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0; /* фон позади контента */
+      pointer-events: none;
+    }
+
+    /* Сцена: скроллимся, если фото выше окна */
+    #stage {
+      position: relative;
+      z-index: 1; /* контент над дождем */
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* Обертка фото */
+    #photo-wrapper {
+      position: relative;
+      width: 100vw;
+      height: auto;
+      overflow: visible;
+    }
+
+    /* Фото: ширина — весь экран, высота пропорциональна */
+    #photo {
+      display: block;
+      width: 100vw;
+      height: auto;
+      border-radius: 4px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    /* Кнопки (hotspots) */
+    .hotspot {
+      position: absolute;
+      transform: translateX(-50%);
+      text-decoration: none;
+      display: inline-block;
+      width: 65.9%;
+      left: 50%;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
+      animation: pulse var(--pulse-duration) ease-in-out infinite;
+    }
+
+    .hotspot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+    }
+
+    .hotspot:focus-visible {
+      outline: 2px solid #00ff88;
+      outline-offset: 4px;
+      border-radius: 12px;
+    }
+
+    /* Пульсация */
+    @keyframes pulse {
+      0% {
+        transform: translateX(-50%) scale(1);
+        filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.40));
+      }
+      50% {
+        transform: translateX(-50%) scale(var(--pulse-scale));
+        filter: drop-shadow(0 10px 26px rgba(0, 255, 136, 0.35));
+      }
+      100% {
+        transform: translateX(-50%) scale(1);
+        filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.40));
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Цифровой дождь (фон) -->
+  <canvas id="matrix"></canvas>
+
+  <!-- Сцена: фото + кнопки -->
+  <main id="stage" aria-label="Главная сцена">
+    <div id="photo-wrapper">
+      <!-- Главное фото -->
+      <img
+        id="photo"
+        src="./Основа.png"
+        alt="Главная фотография"
+        onerror="this.onerror=null; this.style.opacity='0.6'; this.alt='Основа.png не найден';"
+      />
+
+      <!-- Кнопка 1: УЗНАТЬ ПОДРОБНЕЕ -->
+      <a
+        id="hotspot1"
+        class="hotspot"
+        href="https://example.com/details"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Узнать подробнее"
+        style="top: 66.2%;"
+      >
+        <img
+          src="./УЗНАТЬ%20ПОДРОБНЕЕ.png"
+          alt="УЗНАТЬ ПОДРОБНЕЕ"
+          onerror="this.onerror=null; this.style.opacity='0.6'; this.alt='УЗНАТЬ ПОДРОБНЕЕ.png не найден';"
+        />
+      </a>
+
+      <!-- Кнопка 2: НАПИСАТЬ В ТГ -->
+      <a
+        id="hotspot2"
+        class="hotspot"
+        href="https://t.me/your_username"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Написать в Telegram"
+        style="top: 93.3%;"
+      >
+        <img
+          src="./НАПИСАТЬ%20В%20ТГ.png"
+          alt="НАПИСАТЬ В ТГ"
+          onerror="this.onerror=null; this.style.opacity='0.6'; this.alt='НАПИСАТЬ В ТГ.png не найден';"
+        />
+      </a>
+    </div>
+  </main>
+
+  <script>
+    // Цифровой дождь: только 0/1, без размытия, зелёный и чуть быстрее
+    (function () {
+      const canvas = document.getElementById('matrix');
+      const ctx = canvas.getContext('2d');
+
+      // Масштабирование для Retina/HiDPI
+      let DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
+      function resize() {
+        DPR = Math.max(1, Math.round(window.devicePixelRatio || 1));
+        canvas.width = Math.floor(window.innerWidth * DPR);
+        canvas.height = Math.floor(window.innerHeight * DPR);
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(DPR, DPR); // рисуем в CSS-пикселях
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // Настройки шрифта и сетки колонок (в CSS-пикселях)
+      const fontSize = 18;                    // читаемый размер
+      const fontFamily = 'Menlo, Consolas, monospace';
+      const columnsCount = () => Math.floor((canvas.width / DPR) / fontSize);
+
+      // Параметры цвета/яркости (тускло-зелёные)
+      const HEAD_COLOR = '#2ea62e';           // голова — зелёная, но не яркая
+      const TRAIL_BASE_COLOR = { r: 20, g: 140, b: 20 }; // базовый тускло‑зелёный
+
+      // Анимация и рендер
+      const USE_HARD_CLEAR = true;            // убираем «смаз»: жёсткая очистка кадра
+      const MIN_SPEED = 0.85;                 // чуть быстрее
+      const MAX_SPEED = 1.5;                  // чуть быстрее
+      const MIN_TRAIL = 12;                   // минимальная длина шлейфа (символов)
+      const MAX_TRAIL = 26;                   // максимальная длина шлейфа (символов)
+      const CHAR_SWITCH_PROB = 0.05;          // вероятность смены символа на "голове"
+
+      // Массив колонок: x, y (голова), speed, trailLen, headChar
+      let cols = [];
+
+      function initColumns() {
+        const count = columnsCount();
+        cols = new Array(count).fill(0).map((_, i) => ({
+          x: i * fontSize,
+          y: Math.random() * (window.innerHeight), // старт случайно
+          speed: MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED),
+          trail: Math.floor(MIN_TRAIL + Math.random() * (MAX_TRAIL - MIN_TRAIL)),
+          head: Math.random() < 0.5 ? '0' : '1',
+        }));
+      }
+
+      initColumns();
+
+      // Настройка рендера текста
+      ctx.textBaseline = 'top';
+      ctx.shadowBlur = 0;
+      ctx.imageSmoothingEnabled = false;
+
+      function draw() {
+        const widthPx = canvas.width / DPR;
+        const heightPx = canvas.height / DPR;
+
+        // Жёсткая очистка кадра — чёткие цифры без размытия
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, widthPx, heightPx);
+
+        ctx.font = `bold ${fontSize}px ${fontFamily}`;
+
+        // Каждая колонка — единичный поток
+        for (let i = 0; i < cols.length; i++) {
+          const c = cols[i];
+
+          // Смена головы (перебирание 0/1)
+          if (Math.random() < CHAR_SWITCH_PROB) {
+            c.head = c.head === '0' ? '1' : '0';
+          }
+
+          // Рисуем голову — более зелёная и тусклая, без прозрачности
+          const yHead = Math.floor(c.y); // выравнивание по пикселям для чёткости
+          ctx.fillStyle = HEAD_COLOR;
+          ctx.fillText(c.head, c.x, yHead);
+
+          // Рисуем шлейф ниже головы: ступенчатая яркость, без прозрачности
+          for (let j = 1; j <= c.trail; j++) {
+            const yy = Math.floor(c.y - j * fontSize);
+            if (yy < -fontSize) break;
+
+            // плавная ступенчатая яркость: ~100% -> ~25%
+            const t = j / c.trail; // 0..1
+            const brightness = 0.75 * (1 - t) + 0.25; // 1.0 -> 0.25
+            const r = Math.round(TRAIL_BASE_COLOR.r * brightness);
+            const g = Math.round(TRAIL_BASE_COLOR.g * brightness);
+            const b = Math.round(TRAIL_BASE_COLOR.b * brightness);
+
+            const char = Math.random() < 0.5 ? '0' : '1';
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.fillText(char, c.x, yy);
+          }
+
+          // Движение вниз (чуть ускорено)
+          c.y += c.speed;
+
+          // Если поток вышел за край — переинициализируем вверху
+          if (c.y - c.trail * fontSize > heightPx + fontSize) {
+            c.y = -Math.random() * 200; // старт чуть выше экрана
+            c.speed = MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED);
+            c.trail = Math.floor(MIN_TRAIL + Math.random() * (MAX_TRAIL - MIN_TRAIL));
+            c.head = Math.random() < 0.5 ? '0' : '1';
+          }
+        }
+      }
+
+      let rafId = null;
+      function loop() {
+        draw();
+        rafId = requestAnimationFrame(loop);
+      }
+      loop();
+
+      // При ресайзе экрана — пересчитать колонны
+      let resizeTimeout;
+      window.addEventListener('resize', () => {
+        cancelAnimationFrame(rafId);
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          initColumns();
+          loop();
+        }, 100);
+      });
+    })();
+  </script>
+</body>
+</html>
