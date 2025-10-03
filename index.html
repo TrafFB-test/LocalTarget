@@ -59,14 +59,15 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.35);
     }
 
-    /* Кнопки (hotspots) */
+    /* Кнопки: абсолютное позиционирование внутри фото */
     .hotspot {
       position: absolute;
+      left: 50%;
       transform: translateX(-50%);
       text-decoration: none;
       display: inline-block;
-      width: 65.9%;
-      left: 50%;
+      width: 65.9%;         /* ширина в процентах от реальной ширины изображения */
+      z-index: 2;           /* поверх фото и фона-дождя */
       filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.4));
       animation: pulse var(--pulse-duration) ease-in-out infinite;
     }
@@ -116,11 +117,11 @@
         onerror="this.onerror=null; this.style.opacity='0.6'; this.alt='Основа.png не найден';"
       />
 
-      <!-- Кнопка 1: УЗНАТЬ ПОДРОБНЕЕ -->
+      <!-- Кнопка 1: УЗНАТЬ ПОДРОБНЕЕ (на прежнем месте) -->
       <a
         id="hotspot1"
         class="hotspot"
-        href="https://example.com/details"
+        href="https://t.me/CZ4TRAF"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Узнать подробнее"
@@ -133,11 +134,11 @@
         />
       </a>
 
-      <!-- Кнопка 2: НАПИСАТЬ В ТГ -->
+      <!-- Кнопка 2: НАПИСАТЬ В ТГ (на прежнем месте) -->
       <a
         id="hotspot2"
         class="hotspot"
-        href="https://t.me/your_username"
+        href="https://t.me/CZ4TRAF"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Написать в Telegram"
@@ -153,7 +154,7 @@
   </main>
 
   <script>
-    // Цифровой дождь: только 0/1, без размытия, зелёный и чуть быстрее
+    // Цифровой дождь: только 0/1, тускло-зелёный, без размытия, ускорено падение
     (function () {
       const canvas = document.getElementById('matrix');
       const ctx = canvas.getContext('2d');
@@ -178,13 +179,14 @@
       const columnsCount = () => Math.floor((canvas.width / DPR) / fontSize);
 
       // Параметры цвета/яркости (тускло-зелёные)
-      const HEAD_COLOR = '#2ea62e';           // голова — зелёная, но не яркая
+      const HEAD_COLOR = '#2ea62e';           // голова — зелёная, но не кричащая
       const TRAIL_BASE_COLOR = { r: 20, g: 140, b: 20 }; // базовый тускло‑зелёный
 
       // Анимация и рендер
       const USE_HARD_CLEAR = true;            // убираем «смаз»: жёсткая очистка кадра
-      const MIN_SPEED = 0.85;                 // чуть быстрее
-      const MAX_SPEED = 1.5;                  // чуть быстрее
+      const MIN_SPEED = 0.95;                 // базовая скорость
+      const MAX_SPEED = 1.7;                  // базовая скорость
+      const FALL_SPEED_MULTIPLIER = 3.35;     // ускоряем именно падение потока
       const MIN_TRAIL = 12;                   // минимальная длина шлейфа (символов)
       const MAX_TRAIL = 26;                   // максимальная длина шлейфа (символов)
       const CHAR_SWITCH_PROB = 0.05;          // вероятность смены символа на "голове"
@@ -229,7 +231,7 @@
             c.head = c.head === '0' ? '1' : '0';
           }
 
-          // Рисуем голову — более зелёная и тусклая, без прозрачности
+          // Рисуем голову — зелёная, без прозрачности
           const yHead = Math.floor(c.y); // выравнивание по пикселям для чёткости
           ctx.fillStyle = HEAD_COLOR;
           ctx.fillText(c.head, c.x, yHead);
@@ -251,8 +253,8 @@
             ctx.fillText(char, c.x, yy);
           }
 
-          // Движение вниз (чуть ускорено)
-          c.y += c.speed;
+          // Движение вниз — ускоряем только падение
+          c.y += c.speed * FALL_SPEED_MULTIPLIER;
 
           // Если поток вышел за край — переинициализируем вверху
           if (c.y - c.trail * fontSize > heightPx + fontSize) {
